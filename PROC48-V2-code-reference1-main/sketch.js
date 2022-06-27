@@ -1,0 +1,307 @@
+var bg
+var bottomGround, topGround
+var balloon, balloonImg
+var obstacleTop, obstacleTopImg
+var obstacleBottom, obstacleBottom1, obstacleBottom2
+var gameOver, gameOverImg
+var restart, restartImg
+var backgroundImg;
+var box1, box2, box3, box4, box5, box6, box7;
+var rock1;
+
+var score = 0;
+
+// Estados del juego
+var PLAY = 1;
+var END = 0;
+var gameState = PLAY;
+
+
+function preload(){
+  bgImg = loadImage("assets/montaña.webp")
+  bgImg2 = loadImage("assets/montaña.webp")
+
+  balloonImg = loadAnimation("assets/balloon1.png","assets/balloon2.png","assets/balloon3.png")
+  
+  obsTop1 = loadImage("assets/obsTop1.png")
+  obsTop2 = loadImage("assets/obsTop2.png")
+  
+  obsBottom1 = loadImage("assets/obsBottom1.png")
+  obsBottom2 = loadImage("assets/obsBottom2.png")
+  obsBottom3 = loadImage("assets/obsBottom3.png")
+  
+  gameOverImg= loadImage("assets/gameOver.png")
+  restartImg = loadImage("assets/restart.png")
+
+jumpSound = loadSound("assets/jump.mp3");
+dieSound = loadSound("assets/die.mp3");
+
+rock1 = loadImage("assets/rock1.png");
+
+}
+
+function setup(){
+
+  createCanvas(1200,400)
+// Imagen de fondo
+bg = createSprite(300,200,600,400);
+getBackgroundImg();
+
+box1 = new Box(150,350,50,50);
+box2 = new Box(200,325,50,100);
+box3 = new Box(250,300,50,150);
+box4 = new Box(300,275,50,200);
+box5 = new Box(350,265,50,220);
+box6 = new Box(400,255,50,240);
+box7 = new Box(450,245,50,260);
+//box1.addImage(rock1);
+
+
+// Creando los terrenos inferior y superior
+bottomGround = createSprite(200,390,800,20);
+bottomGround.visible = false;
+
+topGround = createSprite(200,10,800,20);
+topGround.visible = false;
+      
+// Creando el globo
+balloon = createSprite(100,200,20,50);
+balloon.addAnimation("balloon",balloonImg);
+balloon.scale = 0.2;
+balloon.debug = true;
+
+
+// Inicializando los grupos 
+topObstaclesGroup = new Group();
+bottomObstaclesGroup = new Group();
+barGroup = new Group();
+
+// Creando los sprites de fin del juego y reinicio
+gameOver = createSprite(220,200);
+restart = createSprite(220,240);
+gameOver.addImage(gameOverImg);
+gameOver.scale = 0.5;
+restart.addImage(restartImg);
+restart.scale = 0.5;
+gameOver.visible = false;
+restart.visible = false;
+
+
+}
+
+function draw() {
+  
+
+  if(gameState === PLAY){
+
+    // Haciendo saltar al globo aerostático
+    if(keyDown("space")) {
+      balloon.velocityY = -6 ;
+      jumpSound.play();
+    }
+
+    // Agregando gravedad
+     balloon.velocityY = balloon.velocityY + 2;
+
+     
+    Bar();
+
+     // Generando los obstaculos superiores e inferiores
+     spawnObstaclesTop();
+     spawnObstaclesBottom();
+
+// Condición para el estado "END"
+if(topObstaclesGroup.isTouching(balloon) || balloon.isTouching(topGround)
+|| balloon.isTouching(bottomGround) || bottomObstaclesGroup.isTouching(balloon)){
+
+gameState = END;
+dieSound.play();
+}
+
+
+// Agregando AI al globo para cuando toque topObstaclesGroup y topGround
+
+/*if(topObstaclesGroup.isTouching(balloon) || balloon.isTouching(topGround)){
+  balloon.velocityY = 6 ;
+  jumpSound.play();
+}*/
+
+
+// Agregando AI al globo para cuando toque topObstaclesGroup y topGround
+
+/*if(balloon.isTouching(bottomGround) || bottomObstaclesGroup.isTouching(balloon)){
+  balloon.velocityY = -6 ;
+  jumpSound.play();
+}*/
+
+  }
+
+  if(gameState === END) 
+    {
+
+      gameOver.visible = true;
+      gameOver.depth = gameOver.depth+1
+      restart.visible = true;
+      restart.depth = restart.depth+1
+          
+          // Todos los sprite deben dejar de moverse en el estado "END"
+          balloon.velocityX = 0;
+          balloon.velocityY = 0;
+          topObstaclesGroup.setVelocityXEach(0);
+          bottomObstaclesGroup.setVelocityXEach(0);
+          barGroup.setVelocityXEach(0);
+          
+          // Configurando lifetime igual a -1 para que los obstáculos no desaparezcan en el estado "END"
+          topObstaclesGroup.setLifetimeEach(-1);
+          bottomObstaclesGroup.setLifetimeEach(-1);
+         
+          balloon.y = 200;
+          
+          // Reiniciando el juego 
+          if(mousePressedOver(restart)) 
+          {
+                reset();
+          }
+
+    } 
+
+    drawSprites();
+    Score();     
+}
+
+function reset()
+{
+  gameState = PLAY;
+  gameOver.visible = false;
+  restart.visible = false;
+  topObstaclesGroup.destroyEach();
+  bottomObstaclesGroup.destroyEach();
+
+  score = 0;
+}
+
+
+function spawnObstaclesTop() 
+{
+  if(World.frameCount % 60 === 0) {
+    obstacleTop = createSprite(400,50,40,50);
+
+//obstacleTop.addImage(obsTop1);
+
+obstacleTop.scale = 0.1;
+obstacleTop.velocityX = -4;
+
+// Posiciones "y" aleatorias para los obstáculos superiores
+obstacleTop.y = Math.round(random(10,100));
+
+// Generando obstáculos superiores aleatorios
+var rand = Math.round(random(1,2));
+switch(rand) {
+  case 1: obstacleTop.addImage(obsTop1);
+          break;
+  case 2: obstacleTop.addImage(obsTop2);
+          break;
+  default: break;
+}
+
+ // Asignando lifetime a la variable
+obstacleTop.lifetime = 100;
+
+balloon.depth = balloon.depth + 1;
+
+topObstaclesGroup.add(obstacleTop);
+
+  }
+}
+
+function spawnObstaclesBottom() 
+{
+  if(World.frameCount % 60 === 0) {
+    obstacleBottom = createSprite(400,350,40,50);
+
+obstacleBottom.addImage(obsBottom1);
+obstacleBottom.debug=true
+
+
+obstacleBottom.scale = 0.07;
+obstacleBottom.velocityX = -4;
+
+
+
+// Generando obstáculos inferiores aleatorios
+var rand = Math.round(random(1,3));
+switch(rand) {
+  case 1: obstacleBottom.addImage(obsBottom1);
+          break;
+  case 2: obstacleBottom.addImage(obsBottom2);
+          break;
+  case 3: obstacleBottom.addImage(obsBottom3);
+          break;
+  default: break;
+}
+
+ // Asignando lifetime a la variable
+obstacleBottom.lifetime = 100;
+
+balloon.depth = balloon.depth + 1;
+
+bottomObstaclesGroup.add(obstacleBottom);
+
+  }
+}
+
+ function Bar() 
+ {
+         if(World.frameCount % 60 === 0)
+         {
+           var bar = createSprite(400,200,10,800);
+          bar.velocityX = -6
+        
+          
+          bar.velocityX = -6
+          bar.depth = balloon.depth;
+          bar.lifetime = 70;
+
+          bar.visible = false;
+
+          barGroup.add(bar);
+         }
+}
+
+function Score()
+{
+         if(balloon.isTouching(barGroup))
+         {
+           score = score + 1;
+         }
+        textFont("algerian");
+        textSize(30);
+        fill("yellow");
+        text("Puntuación: "+ score, 150, 50);
+       
+  
+}
+
+// Usando llamadas a la API para configurar la imagen de fondo de acuerdo al tiempo
+async function getBackgroundImg(){
+  //var response = await fetch("http://worldtimeapi.org/api/timezone/Asia/Kolkata");
+  var response = await fetch("http://worldtimeapi.org/api/timezone/America/Mexico_City");
+  var responseJSON = await response.json();
+
+  var datetime = responseJSON.datetime;
+  var hour = datetime.slice(11,13);
+  
+  if(hour>=06 && hour<=19){
+    
+    bg.addImage(bgImg);
+    bg.scale = 1.3
+  }
+  else{
+    
+    bg.addImage(bgImg2);
+    bg.scale = 1.5
+    bg.x=200
+    bg.y=200
+  }
+
+}
